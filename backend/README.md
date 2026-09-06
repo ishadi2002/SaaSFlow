@@ -2,9 +2,24 @@
 
 SaaSFlow is a secure full-stack SaaS workspace management application developed using Spring Boot, React, and MySQL.
 
-The system allows users to create accounts, securely log in, and manage their own organizations. It includes JWT-based authentication, BCrypt password encryption, role-based access control, protected REST APIs, and an admin-only dashboard.
+The system allows users to create accounts, securely log in, and manage their own organizations. It includes JWT-based authentication, BCrypt password hashing, role-based access control (RBAC), protected REST APIs, organization ownership authorization, and an admin-only dashboard.
 
 This project was developed as part of my Software Engineering internship learning and practical development experience.
+
+---
+
+## Live Deployment
+
+- **Live Application:** https://saa-s-flow-alpha.vercel.app
+- **Backend API:** https://saasflow-production.up.railway.app
+- **Source Code:** https://github.com/ishadi2002/SaaSFlow
+
+### Deployment
+
+- **Frontend:** Vercel
+- **Backend:** Railway
+- **Database:** Railway MySQL
+- **Version Control:** GitHub
 
 ---
 
@@ -22,7 +37,7 @@ This project was developed as part of my Software Engineering internship learnin
 - Role-based access control (RBAC)
 - USER and ADMIN roles
 - Admin-only protected endpoints
-- CORS configuration
+- Production CORS configuration
 - Backend request validation
 
 ### Organization Management
@@ -51,7 +66,7 @@ The dashboard displays real data retrieved from the backend API.
 
 The application contains a protected admin area.
 
-Only users with the `ADMIN` role can access the admin backend functionality.
+Only users with the `ADMIN` role can access admin backend functionality.
 
 Normal users who attempt to access protected admin functionality are denied by backend role-based access control.
 
@@ -86,6 +101,15 @@ Normal users who attempt to access protected admin functionality are denied by b
 
 - MySQL
 
+### Deployment & Development Tools
+
+- Git
+- GitHub
+- Vercel
+- Railway
+- Railway MySQL
+- VS Code
+
 ---
 
 ## System Architecture
@@ -113,11 +137,30 @@ After successful login, the backend generates a JWT. The frontend sends this tok
 Authorization: Bearer <JWT_TOKEN>
 ```
 
+### Production Architecture
+
+```text
+User
+  |
+  v
+Vercel
+React Frontend
+  |
+  | HTTPS / REST API
+  v
+Railway
+Spring Boot Backend
+  |
+  | Spring Data JPA
+  v
+Railway MySQL
+```
+
 ---
 
 ## Backend Architecture
 
-The backend uses a layered structure:
+The backend uses a layered architecture:
 
 ```text
 Controller
@@ -232,7 +275,7 @@ Users can:
 
 ### ADMIN
 
-Administrators have access to protected admin functionality in addition to authenticated functionality.
+Administrators have access to protected admin functionality in addition to normal authenticated functionality.
 
 Admin access is protected by Spring Security role-based authorization.
 
@@ -242,7 +285,7 @@ Public registration does not allow users to assign themselves the `ADMIN` role.
 
 ## Security
 
-SaaSFlow implements several backend security mechanisms.
+SaaSFlow implements multiple backend security mechanisms.
 
 ### Password Security
 
@@ -278,13 +321,15 @@ Organization update and delete operations verify that the authenticated user own
 
 This prevents one user from modifying another user's organization.
 
+### CORS Security
+
+The backend is configured to allow requests from approved frontend origins, including the production Vercel application.
+
 ---
 
 ## Error Handling
 
 The backend provides centralized exception handling.
-
-Examples include:
 
 | Status | Meaning |
 |---|---|
@@ -300,10 +345,9 @@ Example:
 ```json
 {
   "status": 400,
-  "message": "Validation failed",
   "errors": {
     "email": "Please provide a valid email",
-    "password": "Password is required"
+    "password": "Password must be at least 8 characters"
   }
 }
 ```
@@ -312,43 +356,47 @@ Example:
 
 ## Environment Variables
 
-The backend uses environment variables for sensitive configuration.
+Sensitive configuration is managed using environment variables and is not committed to GitHub.
 
-Required variables:
+Production deployment uses variables such as:
 
 ```text
-DB_PASSWORD
+MYSQLHOST
+MYSQLPORT
+MYSQLDATABASE
+MYSQLUSER
+MYSQLPASSWORD
 JWT_SECRET
+PORT
 ```
 
-Example PowerShell configuration:
+Railway manages the production database connection and backend environment configuration.
 
-```powershell
-$env:DB_PASSWORD="YOUR_DATABASE_PASSWORD"
-$env:JWT_SECRET="YOUR_SECURE_JWT_SECRET"
-```
-
-Do not commit real passwords or JWT secrets to GitHub.
+Never commit real database passwords or JWT secrets to GitHub.
 
 ---
 
 ## Database Configuration
 
-Create a MySQL database:
+SaaSFlow uses MySQL for data persistence.
+
+### Local Development
+
+Create a local MySQL database:
 
 ```sql
 CREATE DATABASE saasflow_db;
 ```
 
-The backend database configuration uses:
+Configure the backend with the required local database connection values and environment variables.
 
-```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/saasflow_db
-spring.datasource.username=root
-spring.datasource.password=${DB_PASSWORD}
-```
+### Production
 
-Hibernate is configured to update the schema automatically during development.
+The production application uses Railway MySQL.
+
+Database credentials and connection details are provided securely through Railway environment variables.
+
+Hibernate is configured to automatically update the database schema:
 
 ```properties
 spring.jpa.hibernate.ddl-auto=update
@@ -356,41 +404,43 @@ spring.jpa.hibernate.ddl-auto=update
 
 ---
 
-## Running the Backend
+## Running the Project Locally
 
-Navigate to the backend project:
-
-```powershell
-cd saasflow-api
-```
-
-Set the required environment variables:
+### 1. Clone the Repository
 
 ```powershell
-$env:DB_PASSWORD="YOUR_DATABASE_PASSWORD"
-$env:JWT_SECRET="YOUR_SECURE_JWT_SECRET"
+git clone https://github.com/ishadi2002/SaaSFlow.git
+cd SaaSFlow
 ```
 
-Start Spring Boot:
+### 2. Run the Backend
+
+Navigate to the backend directory:
+
+```powershell
+cd backend
+```
+
+Configure the required database and JWT environment variables for your local environment.
+
+Then start Spring Boot:
 
 ```powershell
 .\mvnw spring-boot:run
 ```
 
-The backend runs on:
+The backend runs locally on:
 
 ```text
 http://localhost:8081
 ```
 
----
+### 3. Run the Frontend
 
-## Running the Frontend
-
-Navigate to the frontend project:
+Open another terminal and navigate to:
 
 ```powershell
-cd saasflow-frontend
+cd frontend
 ```
 
 Install dependencies:
@@ -399,21 +449,39 @@ Install dependencies:
 npm install
 ```
 
-Start the development server:
+Start the Vite development server:
 
 ```powershell
 npm run dev
 ```
 
-Open the URL displayed by Vite in the terminal.
+Open the local URL displayed by Vite in the terminal.
 
-During local development, this may be:
+---
 
-```text
-http://localhost:5173
-http://localhost:5174
-http://localhost:5175
-```
+## Production Deployment
+
+### Frontend
+
+The React frontend is deployed using Vercel.
+
+**Live Application:**
+
+https://saa-s-flow-alpha.vercel.app
+
+### Backend
+
+The Spring Boot REST API is deployed using Railway.
+
+**Backend:**
+
+https://saasflow-production.up.railway.app
+
+### Database
+
+The production MySQL database is hosted using Railway MySQL.
+
+The frontend communicates with the Railway backend through HTTPS REST API requests.
 
 ---
 
@@ -437,6 +505,12 @@ This project demonstrates practical experience with:
 - Frontend-backend API integration
 - Layered backend architecture
 - Secure environment configuration
+- CORS configuration
+- Git and GitHub version control
+- Cloud database integration
+- Frontend production deployment
+- Backend production deployment
+- Full-stack cloud deployment
 
 ---
 
@@ -449,29 +523,37 @@ Possible future improvements include:
 - Forgot/reset password
 - User profile management
 - Organization member management
+- Subscription plan management
 - Advanced admin analytics
 - Audit logs
 - Pagination and search
-- Production deployment
-- Automated testing
-- Docker deployment
+- Automated unit and integration testing
+- Docker containerization
+- CI/CD improvements
 
 ---
 
 ## Project Status
 
-Core SaaSFlow functionality is implemented and tested.
+SaaSFlow core functionality and production deployment are complete.
 
 - Authentication — Complete
 - JWT Security — Complete
+- BCrypt Password Security — Complete
 - Organization CRUD — Complete
-- User-specific ownership — Complete
+- User-specific Ownership — Complete
 - Role-Based Access Control — Complete
-- Admin protection — Complete
-- Backend validation — Complete
-- Error handling — Complete
-- React frontend integration — Complete
-- Dashboard integration — Complete
+- Admin Protection — Complete
+- Backend Validation — Complete
+- Error Handling — Complete
+- React Frontend Integration — Complete
+- Dashboard Integration — Complete
+- Production Frontend Deployment — Complete
+- Production Backend Deployment — Complete
+- Cloud MySQL Integration — Complete
+- GitHub Version Control — Complete
+
+**Project Status: Production Deployed and Functional**
 
 ---
 
