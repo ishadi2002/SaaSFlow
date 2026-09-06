@@ -1,10 +1,27 @@
 # SaaSFlow
 
-SaaSFlow is a secure full-stack SaaS workspace management application developed using Spring Boot, React, and MySQL.
+SaaSFlow is a secure full-stack subscription-based SaaS workspace management application developed using Spring Boot, React, and MySQL.
 
-The system allows users to create accounts, securely log in, and manage their own organizations. It includes JWT-based authentication, BCrypt password encryption, role-based access control, protected REST APIs, and an admin-only dashboard.
+The system allows users to create accounts, securely log in, manage organizations, select subscription plans, switch or cancel subscriptions, and access features according to their active plan.
+
+SaaSFlow implements JWT authentication, BCrypt password hashing, role-based access control (RBAC), subscription-based access control, protected REST APIs, organization ownership authorization, and an admin-only dashboard.
 
 This project was developed as part of my Software Engineering internship learning and practical development experience.
+
+---
+
+## Live Deployment
+
+- **Live Application:** https://saa-s-flow-alpha.vercel.app
+- **Backend API:** https://saasflow-production.up.railway.app
+- **Source Code:** https://github.com/ishadi2002/SaaSFlow
+
+### Deployment
+
+- **Frontend:** Vercel
+- **Backend:** Railway
+- **Database:** Railway MySQL
+- **Version Control:** GitHub
 
 ---
 
@@ -22,8 +39,42 @@ This project was developed as part of my Software Engineering internship learnin
 - Role-based access control (RBAC)
 - USER and ADMIN roles
 - Admin-only protected endpoints
-- CORS configuration
+- Production CORS configuration
 - Backend request validation
+
+### Subscription Management
+
+SaaSFlow includes a complete subscription-based SaaS workflow.
+
+Available plans:
+
+| Plan | Price | Features |
+|---|---:|---|
+| FREE | $0.00/month | Basic workspace access and limited features |
+| BASIC | $9.99/month | Organization management and standard features |
+| PREMIUM | $19.99/month | Full access, premium content, and advanced features |
+
+Users can:
+
+- View available subscription plans
+- Subscribe to a plan
+- View their current subscription
+- Switch or upgrade subscription plans
+- Cancel an active subscription
+- Access features according to the active plan
+- Access premium-only content when subscribed to PREMIUM
+
+### Plan-Based Access Control
+
+The backend enforces subscription-based authorization.
+
+- FREE users cannot access premium-only resources
+- BASIC users cannot access premium-only resources
+- PREMIUM users can access premium-only resources
+- Subscription validation is performed by the backend
+- Unauthorized premium access returns `403 Forbidden`
+
+This ensures that premium functionality cannot be accessed simply by modifying the frontend.
 
 ### Organization Management
 
@@ -38,8 +89,9 @@ Authenticated users can manage their own organizations.
 
 ### Dashboard
 
-The dashboard displays real data retrieved from the backend API.
+The application provides authenticated dashboard functionality.
 
+- Protected dashboard API
 - Total organization count
 - Recent organization activity
 - Authentication status
@@ -47,11 +99,22 @@ The dashboard displays real data retrieved from the backend API.
 - Backend API connection status
 - Quick navigation actions
 
+### User Profile
+
+Authenticated users can access their profile information through a protected backend endpoint.
+
+The profile API provides authenticated user information such as:
+
+- User ID
+- Name
+- Email
+- Role
+
 ### Admin Dashboard
 
 The application contains a protected admin area.
 
-Only users with the `ADMIN` role can access the admin backend functionality.
+Only users with the `ADMIN` role can access admin backend functionality.
 
 Normal users who attempt to access protected admin functionality are denied by backend role-based access control.
 
@@ -86,6 +149,16 @@ Normal users who attempt to access protected admin functionality are denied by b
 
 - MySQL
 
+### Deployment & Development Tools
+
+- Git
+- GitHub
+- Vercel
+- Railway
+- Railway MySQL
+- VS Code
+- Postman
+
 ---
 
 ## System Architecture
@@ -113,11 +186,30 @@ After successful login, the backend generates a JWT. The frontend sends this tok
 Authorization: Bearer <JWT_TOKEN>
 ```
 
+### Production Architecture
+
+```text
+User
+ |
+ v
+Vercel
+React Frontend
+ |
+ | HTTPS / REST API
+ v
+Railway
+Spring Boot Backend
+ |
+ | Spring Data JPA
+ v
+Railway MySQL
+```
+
 ---
 
 ## Backend Architecture
 
-The backend uses a layered structure:
+The backend uses a layered architecture:
 
 ```text
 Controller
@@ -185,7 +277,7 @@ src
 └── styles
 ```
 
-The frontend uses separate CSS files for major pages and layouts to keep the UI code organized and maintainable.
+The frontend uses separate CSS files for major pages and layouts to keep the UI organized and maintainable.
 
 ---
 
@@ -197,6 +289,29 @@ The frontend uses separate CSS files for major pages and layouts to keep the UI 
 |---|---|---|---|
 | POST | `/api/auth/signup` | Register a new user | Public |
 | POST | `/api/auth/login` | Login and receive JWT | Public |
+
+### User
+
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| GET | `/api/profile` | Get authenticated user profile | Authenticated |
+| GET | `/api/dashboard` | Get authenticated dashboard data | Authenticated |
+
+### Subscription Plans
+
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| GET | `/api/plans` | View available subscription plans | Public |
+
+### Subscription Management
+
+| Method | Endpoint | Description | Access |
+|---|---|---|---|
+| POST | `/api/subscribe` | Subscribe to a plan | Authenticated |
+| GET | `/api/subscription` | View current subscription | Authenticated |
+| PUT | `/api/upgrade-plan` | Switch or upgrade subscription plan | Authenticated |
+| DELETE | `/api/cancel-subscription` | Cancel active subscription | Authenticated |
+| GET | `/api/premium-content` | Access premium-only content | PREMIUM only |
 
 ### Organizations
 
@@ -224,15 +339,19 @@ A normal registered account receives the `USER` role by default.
 Users can:
 
 - Login
+- Access their profile
 - Access their dashboard
+- View subscription plans
+- Manage their subscription
 - Create organizations
 - View their organizations
 - Update their organizations
 - Delete their organizations
+- Access features allowed by their active subscription
 
 ### ADMIN
 
-Administrators have access to protected admin functionality in addition to authenticated functionality.
+Administrators have access to protected admin functionality in addition to normal authenticated functionality.
 
 Admin access is protected by Spring Security role-based authorization.
 
@@ -242,7 +361,7 @@ Public registration does not allow users to assign themselves the `ADMIN` role.
 
 ## Security
 
-SaaSFlow implements several backend security mechanisms.
+SaaSFlow implements multiple backend security mechanisms.
 
 ### Password Security
 
@@ -272,11 +391,47 @@ Example:
 @PreAuthorize("hasRole('ADMIN')")
 ```
 
+### Subscription-Based Access Control
+
+SaaSFlow implements plan-based authorization in addition to role-based access control.
+
+Premium resources verify the authenticated user's active subscription before granting access.
+
+```text
+FREE     -> Premium access denied
+BASIC    -> Premium access denied
+PREMIUM  -> Premium access granted
+```
+
+A FREE or BASIC user attempting to access:
+
+```text
+GET /api/premium-content
+```
+
+receives:
+
+```text
+403 Forbidden
+```
+
+A user with an active PREMIUM subscription receives:
+
+```text
+200 OK
+```
+
+This access control is enforced by the backend.
+
 ### Resource Ownership
 
 Organization update and delete operations verify that the authenticated user owns the requested organization.
 
 This prevents one user from modifying another user's organization.
+
+### CORS Security
+
+The backend is configured to allow requests from approved frontend origins, including the production Vercel application.
 
 ---
 
@@ -284,10 +439,10 @@ This prevents one user from modifying another user's organization.
 
 The backend provides centralized exception handling.
 
-Examples include:
-
 | Status | Meaning |
 |---|---|
+| 200 | Request Successful |
+| 201 | Resource Created |
 | 400 | Bad Request / Validation Error |
 | 401 | Authentication Required |
 | 403 | Forbidden |
@@ -300,10 +455,9 @@ Example:
 ```json
 {
   "status": 400,
-  "message": "Validation failed",
   "errors": {
     "email": "Please provide a valid email",
-    "password": "Password is required"
+    "password": "Password must be at least 8 characters"
   }
 }
 ```
@@ -312,43 +466,54 @@ Example:
 
 ## Environment Variables
 
-The backend uses environment variables for sensitive configuration.
+Sensitive configuration is managed using environment variables and is not committed to GitHub.
 
-Required variables:
+Production deployment uses variables such as:
 
 ```text
-DB_PASSWORD
+MYSQLHOST
+MYSQLPORT
+MYSQLDATABASE
+MYSQLUSER
+MYSQLPASSWORD
 JWT_SECRET
+PORT
 ```
 
-Example PowerShell configuration:
+Railway manages the production database connection and backend environment configuration.
 
-```powershell
-$env:DB_PASSWORD="YOUR_DATABASE_PASSWORD"
-$env:JWT_SECRET="YOUR_SECURE_JWT_SECRET"
-```
-
-Do not commit real passwords or JWT secrets to GitHub.
+Never commit real database passwords or JWT secrets to GitHub.
 
 ---
 
 ## Database Configuration
 
-Create a MySQL database:
+SaaSFlow uses MySQL for data persistence.
+
+Main application data includes:
+
+- Users
+- Organizations
+- Subscription plans
+- User subscriptions
+
+### Local Development
+
+Create a local MySQL database:
 
 ```sql
 CREATE DATABASE saasflow_db;
 ```
 
-The backend database configuration uses:
+Configure the backend with the required local database connection values and environment variables.
 
-```properties
-spring.datasource.url=jdbc:mysql://localhost:3306/saasflow_db
-spring.datasource.username=root
-spring.datasource.password=${DB_PASSWORD}
-```
+### Production
 
-Hibernate is configured to update the schema automatically during development.
+The production application uses Railway MySQL.
+
+Database credentials and connection details are provided securely through Railway environment variables.
+
+Hibernate is configured to automatically update the database schema:
 
 ```properties
 spring.jpa.hibernate.ddl-auto=update
@@ -356,20 +521,33 @@ spring.jpa.hibernate.ddl-auto=update
 
 ---
 
-## Running the Backend
+## Running the Project Locally
 
-Navigate to the backend project:
+### 1. Clone the Repository
 
 ```powershell
-cd saasflow-api
+git clone https://github.com/ishadi2002/SaaSFlow.git
+cd SaaSFlow
 ```
 
-Set the required environment variables:
+### 2. Run the Backend
+
+Navigate to the backend directory:
 
 ```powershell
-$env:DB_PASSWORD="YOUR_DATABASE_PASSWORD"
+cd backend
+```
+
+Configure the required database and JWT environment variables for your local environment.
+
+Example:
+
+```powershell
+$env:DB_PASSWORD="YOUR_LOCAL_DATABASE_PASSWORD"
 $env:JWT_SECRET="YOUR_SECURE_JWT_SECRET"
 ```
+
+Do not commit these values to GitHub.
 
 Start Spring Boot:
 
@@ -377,20 +555,18 @@ Start Spring Boot:
 .\mvnw spring-boot:run
 ```
 
-The backend runs on:
+The backend runs locally on:
 
 ```text
 http://localhost:8081
 ```
 
----
+### 3. Run the Frontend
 
-## Running the Frontend
-
-Navigate to the frontend project:
+Open another terminal and navigate to:
 
 ```powershell
-cd saasflow-frontend
+cd frontend
 ```
 
 Install dependencies:
@@ -399,21 +575,84 @@ Install dependencies:
 npm install
 ```
 
-Start the development server:
+Start the Vite development server:
 
 ```powershell
 npm run dev
 ```
 
-Open the URL displayed by Vite in the terminal.
+Open the local URL displayed by Vite in the terminal.
 
-During local development, this may be:
+---
+
+## Production Deployment
+
+### Frontend
+
+The React frontend is deployed using Vercel.
+
+**Live Application:**
+
+https://saa-s-flow-alpha.vercel.app
+
+### Backend
+
+The Spring Boot REST API is deployed using Railway.
+
+**Backend API:**
+
+https://saasflow-production.up.railway.app
+
+### Database
+
+The production MySQL database is hosted using Railway MySQL.
+
+The frontend communicates with the Railway backend through HTTPS REST API requests.
+
+---
+
+## Testing & Verification
+
+The core SaaS functionality has been tested during development.
+
+### Authentication
+
+- Registration works
+- Login works
+- JWT authentication works
+- Protected endpoints reject unauthorized access
+
+### Subscription Workflow
+
+- Plans load successfully
+- Users can subscribe
+- Users can switch plans
+- Users can upgrade to PREMIUM
+- Users can cancel subscriptions
+- Current subscription status is available
+
+### Plan-Based Security
+
+Verified behavior:
 
 ```text
-http://localhost:5173
-http://localhost:5174
-http://localhost:5175
+FREE/BASIC + /api/premium-content
+-> 403 Forbidden
+
+PREMIUM + /api/premium-content
+-> 200 OK
 ```
+
+### Production Verification
+
+The deployed application has also been verified with:
+
+- Vercel frontend
+- Railway backend
+- Railway MySQL
+- Frontend-to-backend API communication
+- Production subscription plan loading
+- Production subscription management
 
 ---
 
@@ -422,6 +661,7 @@ http://localhost:5175
 This project demonstrates practical experience with:
 
 - Full-stack application development
+- Subscription-based SaaS development
 - REST API development
 - React frontend development
 - Spring Boot backend development
@@ -430,6 +670,9 @@ This project demonstrates practical experience with:
 - Spring Security
 - BCrypt password hashing
 - Role-based access control
+- Plan-based access control
+- Subscription lifecycle management
+- Premium feature authorization
 - CRUD operations
 - Resource ownership authorization
 - Form validation
@@ -437,6 +680,12 @@ This project demonstrates practical experience with:
 - Frontend-backend API integration
 - Layered backend architecture
 - Secure environment configuration
+- CORS configuration
+- Git and GitHub version control
+- Cloud database integration
+- Frontend production deployment
+- Backend production deployment
+- Full-stack cloud deployment
 
 ---
 
@@ -444,34 +693,51 @@ This project demonstrates practical experience with:
 
 Possible future improvements include:
 
+- Payment gateway integration
+- Automated recurring billing
 - Refresh tokens
 - Email verification
 - Forgot/reset password
-- User profile management
+- Extended user profile management
 - Organization member management
 - Advanced admin analytics
 - Audit logs
 - Pagination and search
-- Production deployment
-- Automated testing
-- Docker deployment
+- Automated unit and integration testing
+- Docker containerization
+- CI/CD improvements
 
 ---
 
 ## Project Status
 
-Core SaaSFlow functionality is implemented and tested.
+SaaSFlow core functionality and production deployment are complete.
 
 - Authentication — Complete
 - JWT Security — Complete
+- BCrypt Password Security — Complete
+- User Profile API — Complete
+- Dashboard API — Complete
 - Organization CRUD — Complete
-- User-specific ownership — Complete
+- User-specific Ownership — Complete
 - Role-Based Access Control — Complete
-- Admin protection — Complete
-- Backend validation — Complete
-- Error handling — Complete
-- React frontend integration — Complete
-- Dashboard integration — Complete
+- Admin Protection — Complete
+- Subscription Plans — Complete
+- Subscribe / Switch / Upgrade — Complete
+- Subscription Cancellation — Complete
+- Subscription Status Management — Complete
+- Plan-Based Access Control — Complete
+- Premium Content Protection — Complete
+- Backend Validation — Complete
+- Error Handling — Complete
+- React Frontend Integration — Complete
+- Subscription UI — Complete
+- Production Frontend Deployment — Complete
+- Production Backend Deployment — Complete
+- Cloud MySQL Integration — Complete
+- GitHub Version Control — Complete
+
+**Project Status: Production Deployed and Functional**
 
 ---
 
