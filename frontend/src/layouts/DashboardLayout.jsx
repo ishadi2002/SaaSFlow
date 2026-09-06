@@ -1,70 +1,86 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Building2,
   ShieldCheck,
+  CreditCard,
   LogOut,
-  Menu,
-  X,
 } from "lucide-react";
-import { useState } from "react";
-import { useAuth } from "../context/AuthContext";
 
-const DashboardLayout = () => {
-  const { logout, user } = useAuth();
+import "../styles/dashboard-layout.css";
+
+export default function DashboardLayout({ children }) {
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const handleLogout = () => {
-    logout();
+  const email =
+    localStorage.getItem("email") ||
+    "SaaSFlow User";
+
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("email");
+    localStorage.removeItem("role");
+
     navigate("/login");
   };
 
   return (
     <div className="dashboard-shell">
-      <aside className={`sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
-        <div className="sidebar-header">
-          <div className="brand-logo">
-            <div className="brand-logo-icon">S</div>
-            <span>SaaSFlow</span>
+      <aside className="dashboard-sidebar">
+        <div className="sidebar-brand">
+          <div className="sidebar-logo">
+            S
           </div>
 
-          <button
-            className="sidebar-close"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <X size={20} />
-          </button>
+          <span>SaaSFlow</span>
         </div>
 
-        <nav className="sidebar-nav">
+        <nav className="sidebar-navigation">
           <NavLink
             to="/dashboard"
             className={({ isActive }) =>
-              `sidebar-link ${isActive ? "active" : ""}`
+              isActive
+                ? "sidebar-link active"
+                : "sidebar-link"
             }
           >
-            <LayoutDashboard size={19} />
+            <LayoutDashboard size={20} />
             <span>Dashboard</span>
           </NavLink>
 
           <NavLink
             to="/organizations"
             className={({ isActive }) =>
-              `sidebar-link ${isActive ? "active" : ""}`
+              isActive
+                ? "sidebar-link active"
+                : "sidebar-link"
             }
           >
-            <Building2 size={19} />
+            <Building2 size={20} />
             <span>Organizations</span>
+          </NavLink>
+
+          <NavLink
+            to="/subscriptions"
+            className={({ isActive }) =>
+              isActive
+                ? "sidebar-link active"
+                : "sidebar-link"
+            }
+          >
+            <CreditCard size={20} />
+            <span>Subscriptions</span>
           </NavLink>
 
           <NavLink
             to="/admin"
             className={({ isActive }) =>
-              `sidebar-link ${isActive ? "active" : ""}`
+              isActive
+                ? "sidebar-link active"
+                : "sidebar-link"
             }
           >
-            <ShieldCheck size={19} />
+            <ShieldCheck size={20} />
             <span>Admin</span>
           </NavLink>
         </nav>
@@ -72,61 +88,68 @@ const DashboardLayout = () => {
         <div className="sidebar-footer">
           <div className="sidebar-user">
             <div className="sidebar-avatar">
-              {user?.email?.charAt(0)?.toUpperCase() || "U"}
+              {email
+                .charAt(0)
+                .toUpperCase()}
             </div>
 
             <div>
-              <p>{user?.email || "User"}</p>
-              <span>Workspace member</span>
+              <div className="sidebar-user-email">
+                {email}
+              </div>
+
+              <div className="sidebar-user-status">
+                Workspace member
+              </div>
             </div>
           </div>
 
-          <button className="logout-button" onClick={handleLogout}>
-            <LogOut size={18} />
+          <button
+            type="button"
+            className="sidebar-logout"
+            onClick={logout}
+          >
+            <LogOut size={19} />
             <span>Logout</span>
           </button>
         </div>
       </aside>
 
-      {sidebarOpen && (
-        <div
-          className="sidebar-overlay"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
       <main className="dashboard-main">
         <header className="dashboard-topbar">
-          <button
-            className="mobile-menu-button"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu size={22} />
-          </button>
-
           <div>
-            <p className="topbar-eyebrow">Workspace</p>
-            <h2>SaaSFlow Control Center</h2>
+            <div className="topbar-eyebrow">
+              WORKSPACE
+            </div>
+
+            <div className="topbar-title">
+              SaaSFlow Control Center
+            </div>
           </div>
 
-          <div className="topbar-profile">
+          <div className="topbar-user">
             <div className="topbar-avatar">
-              {user?.email?.charAt(0)?.toUpperCase() || "U"}
+              {email
+                .charAt(0)
+                .toUpperCase()}
             </div>
 
             <div>
-              <p>{user?.email || "User"}</p>
-              <span>Active session</span>
+              <div className="topbar-email">
+                {email}
+              </div>
+
+              <div className="topbar-status">
+                Active session
+              </div>
             </div>
           </div>
         </header>
 
         <section className="dashboard-content">
-          <Outlet />
+          {children}
         </section>
       </main>
     </div>
   );
-};
-
-export default DashboardLayout;
+}

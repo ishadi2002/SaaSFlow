@@ -1,7 +1,14 @@
 import axios from "axios";
 
+const isLocalhost =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1";
+
 const api = axios.create({
-  baseURL: "https://saasflow-production.up.railway.app/api",
+  baseURL: isLocalhost
+    ? "http://localhost:8081/api"
+    : "https://saasflow-production.up.railway.app/api",
+
   headers: {
     "Content-Type": "application/json",
   },
